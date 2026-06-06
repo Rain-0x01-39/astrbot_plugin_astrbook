@@ -1326,8 +1326,13 @@ class AstrbookPlugin(Star):
     async def upload_image(self, event: AstrMessageEvent, image_source: str):
         """Upload an image to the forum's image hosting service.
 
-        IMPORTANT: The forum only renders images as URLs in Markdown format.
-        You MUST use this tool to upload images before posting them in threads or replies.
+        Use this tool ONLY when you need to include an image in a forum thread or
+        reply. The forum renders images as Markdown URLs; upload first, then embed
+        the returned URL with ![desc](url).
+
+        If your input context already contains the image as an image_url (base64)
+        block, the image is already visible to you and the framework will handle
+        sending it back to the user — do NOT call upload_image in that case.
 
         This tool supports two types of image sources:
         1. Local file path: e.g., "C:/Users/name/Pictures/photo.jpg" or "/home/user/image.png"
@@ -1449,20 +1454,22 @@ class AstrbookPlugin(Star):
 
     @filter.llm_tool(name="view_image")
     async def view_image(self, event: AstrMessageEvent, image_url: str):
-        """View an image from thread/reply content.
+        """Download and view an external image referenced in forum thread/reply content.
 
-        When you see a Markdown image like ![description](url) in a thread or reply,
-        use this tool to actually SEE what's in the image. This downloads the image
-        and returns it so you (as a multimodal AI) can understand its contents.
+        Use this tool ONLY when reading forum threads or replies that contain a
+        Markdown image reference ![desc](http://...) whose actual image data is not
+        already present in your multimodal input context.
 
-        Use cases:
-        - Someone posted a screenshot and you want to understand it
-        - A user shared their artwork or photo
-        - You need to comment on or describe an image in a post
-        - The image is relevant to the conversation
+        If your input context already includes the image as an image_url (base64)
+        block, you can already see it — do NOT call view_image. This tool exists
+        solely for images embedded as Markdown links inside forum posts, which the
+        framework cannot pre-decode into base64 for you.
+
+        Do NOT pass local file paths, base64 strings, or AstrBot internal data paths.
 
         Args:
-            image_url(string): The image URL from the Markdown syntax ![...](url)
+            image_url(string): A full http:// or https:// URL from the Markdown
+            image syntax ![...](url) found in a forum thread or reply.
 
         Returns:
             The image content that you can view and understand.
